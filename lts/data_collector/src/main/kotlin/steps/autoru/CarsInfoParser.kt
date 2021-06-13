@@ -97,7 +97,7 @@ class CarsInfoParser {
 
     fun writeCarsData(brand: String, autosInfo: List<AutoInfo>) {
         val pathName = "${System.getProperty("user.dir")}/lts/data_collector/src/main/resources/all_$brand.csv"
-        OutputStreamWriter(FileOutputStream(pathName)).use {
+        OutputStreamWriter(FileOutputStream(pathName , true)).use {
             for (autoInfo in autosInfo) {
                 it.appendLine(" ${autoInfo.brand}; ${autoInfo.productionDate}; ${autoInfo.bodyType}; ${autoInfo.color}; ${autoInfo.engineDisplacement}; ${autoInfo.enginePower}; ${autoInfo.fuelType}; ${autoInfo.vehicleTransmission}; ${autoInfo.drive}; ${autoInfo.wheel}; ${autoInfo.own}; ${autoInfo.state}; ${autoInfo.customs}; ${autoInfo.price}; ${autoInfo.mileage}; ${autoInfo.owners}; ${autoInfo.car_url}; ${autoInfo.image_url}; ${autoInfo.numberOfDoors}; ${autoInfo.parsing_unixtime}; ${autoInfo.model}; ${autoInfo.pts}; ${autoInfo.description}")
             }
