@@ -9,6 +9,7 @@ import java.io.File
 import java.io.FileOutputStream
 import java.io.OutputStream
 import java.io.OutputStreamWriter
+import java.nio.charset.Charset
 import java.nio.file.Files
 import java.nio.file.Paths
 import java.time.LocalDateTime
@@ -24,7 +25,12 @@ class CarsInfoParser {
         IntStream.range(start, end).forEach { i ->
             run {
                 for (brand in brands) {
-                    service.submit { writeCarsData(brand, getCarsData(brand, i)) }
+                    val pathName = "${System.getProperty("user.dir")}/lts/data_collector/src/main/resources/all_$brand.csv"
+                    service.submit {
+                        OutputStreamWriter(FileOutputStream(pathName , true), Charset.forName("UTF8")).use {
+                            writeCarsData(it, brand, getCarsData(brand, i))
+                        }
+                    }
                 }
             }
         }
@@ -40,7 +46,7 @@ class CarsInfoParser {
                 Files.createFile(path)
                 val outputStream: OutputStream = FileOutputStream(pathName)
                 val writer = OutputStreamWriter(outputStream)
-                writer.write("brand; productionDate; bodyType; color; engineDisplacement;enginePower; fuelType; vehicleTransmission; drive; wheel; own; state; customs; price; mileage; owners; car_url; image_url; parsing_unixtime; model; pts; description")
+                writer.write("brand;productionDate;bodyType;color;engineDisplacement;enginePower;fuelType;vehicleTransmission;drive;wheel;own;state;customs;price;mileage;owners;car_url;image_url;numberOfDoors;parsing_unixtime;model;pts;description\n")
                 writer.flush()
                 writer.close()
             }
@@ -83,7 +89,7 @@ class CarsInfoParser {
             autoInfo.pts = autoPage.select(".CardInfoRow.CardInfoRow_pts").text().substringAfter("ПТС").trim()
             autoInfo.customs =
                 autoPage.select(".CardInfoRow.CardInfoRow_customs").text().substringAfter("Таможня").trim()
-            autoInfo.description = autoPage.select(".CardDescription__textInner").text().trim()
+            autoInfo.description = autoPage.select(".CardDescription__textInner").text().trim().replace(";", "")
             autosInfo.add(autoInfo)
         }
         return autosInfo
@@ -95,12 +101,9 @@ class CarsInfoParser {
         return autosInfo
     }
 
-    fun writeCarsData(brand: String, autosInfo: List<AutoInfo>) {
-        val pathName = "${System.getProperty("user.dir")}/lts/data_collector/src/main/resources/all_$brand.csv"
-        OutputStreamWriter(FileOutputStream(pathName , true)).use {
-            for (autoInfo in autosInfo) {
-                it.appendLine(" ${autoInfo.brand}; ${autoInfo.productionDate}; ${autoInfo.bodyType}; ${autoInfo.color}; ${autoInfo.engineDisplacement}; ${autoInfo.enginePower}; ${autoInfo.fuelType}; ${autoInfo.vehicleTransmission}; ${autoInfo.drive}; ${autoInfo.wheel}; ${autoInfo.own}; ${autoInfo.state}; ${autoInfo.customs}; ${autoInfo.price}; ${autoInfo.mileage}; ${autoInfo.owners}; ${autoInfo.car_url}; ${autoInfo.image_url}; ${autoInfo.numberOfDoors}; ${autoInfo.parsing_unixtime}; ${autoInfo.model}; ${autoInfo.pts}; ${autoInfo.description}")
-            }
+    fun writeCarsData(writer: OutputStreamWriter, brand: String, autosInfo: List<AutoInfo>) {
+        for (autoInfo in autosInfo) {
+            writer.write("${autoInfo.brand};${autoInfo.productionDate};${autoInfo.bodyType};${autoInfo.color};${autoInfo.engineDisplacement};${autoInfo.enginePower};${autoInfo.fuelType};${autoInfo.vehicleTransmission};${autoInfo.drive};${autoInfo.wheel};${autoInfo.own};${autoInfo.state};${autoInfo.customs};${autoInfo.price};${autoInfo.mileage};${autoInfo.owners};${autoInfo.car_url};${autoInfo.image_url};${autoInfo.numberOfDoors};${autoInfo.parsing_unixtime};${autoInfo.model};${autoInfo.pts};${autoInfo.description}\n")
         }
     }
 }
