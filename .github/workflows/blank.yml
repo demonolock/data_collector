@@ -28,5 +28,4 @@ jobs:
       # Runs a set of commands using the runners shell
       - name: Run data collection
         run: |
-          ./config.sh --url https://github.com/demonolock/data_collector --token ABMJ23LCNBXSQX7B2U2B5ITA3DJ4C#
-          ./run.sh
+          mvn clean compile
