@@ -25,7 +25,7 @@ class CarsInfoParser {
         IntStream.range(start, end).forEach { i ->
             run {
                 for (brand in brands) {
-                    val pathName = "${System.getProperty("user.dir")}/lts/data_collector/src/main/resources/all_$brand.csv"
+                    val pathName = "${System.getProperty("user.dir")}/src/main/resources/all_$brand.csv"
                     service.submit {
                         OutputStreamWriter(FileOutputStream(pathName , true), Charset.forName("UTF8")).use {
                             writeCarsData(it, brand, getCarsData(brand, i))
@@ -40,8 +40,8 @@ class CarsInfoParser {
 
     fun createFiles(brands: List<String>) {
         for (brand in brands) {
-            val pathName = "${System.getProperty("user.dir")}/lts/data_collector/src/main/resources/all_$brand.csv"
-            val path = Paths.get(File("${System.getProperty("user.dir")}/lts/data_collector/src/main/resources/all_$brand.csv").toString())
+            val pathName = "${System.getProperty("user.dir")}/src/main/resources/all_$brand.csv"
+            val path = Paths.get(File("${System.getProperty("user.dir")}/src/main/resources/all_$brand.csv").toString())
             if (!Files.exists(path)) {
                 Files.createFile(path)
                 val outputStream: OutputStream = FileOutputStream(pathName)

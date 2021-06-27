@@ -17,5 +17,5 @@ val brands = listOf(
 
 fun main(args: Array<String>) {
     CarsInfoParser().createFiles(brands)
-    CarsInfoParser().writeAutoInfoToCsv(brands = brands, start = 19, end = 100, threadsAmount = 10)
+    CarsInfoParser().writeAutoInfoToCsv(brands = brands, start = 1, end = 30, threadsAmount = 10)
 }
