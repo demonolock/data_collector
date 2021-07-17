@@ -17,17 +17,10 @@ import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
 import java.util.concurrent.TimeUnit
 import java.util.stream.IntStream
-import java.security.KeyManagementException
-
-import java.security.NoSuchAlgorithmException
-import java.security.SecureRandom
-import java.security.cert.X509Certificate
-import javax.net.ssl.*
-
 
 class CarsInfoParser {
 
-    fun writeAutoInfoToCsv(city: String, brands: List<String>, start: Int, end: Int, threadsAmount: Int = 1) {
+    fun writeAutoInfoToCsv(city: String, brands: List<String>, start: Int, end: Int, threadsAmount: Int = 1): CarsInfoParser {
         val service: ExecutorService = Executors.newFixedThreadPool(threadsAmount)
         IntStream.range(start, end).forEach { i ->
             run {
@@ -43,6 +36,7 @@ class CarsInfoParser {
         }
         service.awaitTermination(0L, TimeUnit.SECONDS)
         service.shutdown()
+        return this
     }
 
     fun writeAutoInfoToCsv(city: String, brands: List<String>, start: Int, end: Int) {
@@ -57,7 +51,7 @@ class CarsInfoParser {
     }
 
 
-    fun createFiles(brands: List<String>) {
+    fun createFiles(brands: List<String>): CarsInfoParser {
         for (brand in brands) {
             val pathName = "${System.getProperty("user.dir")}/src/main/resources/all_$brand.csv"
             val path = Paths.get(File("${System.getProperty("user.dir")}/src/main/resources/all_$brand.csv").toString())
@@ -70,6 +64,7 @@ class CarsInfoParser {
                 writer.close()
             }
         }
+        return this
     }
 
     fun parseAutoruPage(city: String, brand: String, index: Int): List<AutoInfo> {
@@ -123,6 +118,30 @@ class CarsInfoParser {
     fun writeCarsData(writer: OutputStreamWriter, brand: String, autosInfo: List<AutoInfo>) {
         for (autoInfo in autosInfo) {
             writer.write("${autoInfo.brand};${autoInfo.productionDate};${autoInfo.bodyType};${autoInfo.color};${autoInfo.engineDisplacement};${autoInfo.enginePower};${autoInfo.fuelType};${autoInfo.vehicleTransmission};${autoInfo.drive};${autoInfo.wheel};${autoInfo.state};${autoInfo.customs};${autoInfo.price};${autoInfo.mileage};${autoInfo.owners};${autoInfo.car_url};${autoInfo.image_url};${autoInfo.numberOfDoors};${autoInfo.parsing_unixtime};${autoInfo.model};${autoInfo.pts};${autoInfo.description}\n")
+        }
+    }
+
+    companion object {
+        val brands = listOf(
+            "lexus",
+            "bmw",
+            "audi",
+            "honda",
+            "infiniti",
+            "mercedes",
+            "mitsubishi",
+            "nissan",
+            "skoda",
+            "toyota",
+            "volkswagen",
+            "volvo"
+        )
+        @JvmStatic
+        fun main(args: Array<String>) {
+            CarsInfoParser()
+                .createFiles(brands)
+                .writeAutoInfoToCsv(city = "moskva", brands = brands, start = 1, end = 30, threadsAmount = 1)
+                .writeAutoInfoToCsv(city = "sankt-peterburg", brands = brands, start = 1, end = 30, threadsAmount = 1)
         }
     }
 }
