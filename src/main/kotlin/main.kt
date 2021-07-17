@@ -16,6 +16,8 @@ val brands = listOf(
 )
 
 fun main(args: Array<String>) {
+    System.setProperty("javax.net.ssl.trustStore", "/path/to/web2.uconn.edu.jks");
     CarsInfoParser().createFiles(brands)
-    CarsInfoParser().writeAutoInfoToCsv(brands = brands, start = 1, end = 30, threadsAmount = 10)
+    CarsInfoParser().writeAutoInfoToCsv(city="moskva", brands = brands, start = 1, end = 30, threadsAmount = 10)
+    CarsInfoParser().writeAutoInfoToCsv(city="sankt-peterburg", brands = brands, start = 1, end = 30, threadsAmount = 10)
 }

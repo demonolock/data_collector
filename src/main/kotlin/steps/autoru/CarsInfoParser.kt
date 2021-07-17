@@ -17,10 +17,17 @@ import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
 import java.util.concurrent.TimeUnit
 import java.util.stream.IntStream
+import java.security.KeyManagementException
+
+import java.security.NoSuchAlgorithmException
+import java.security.SecureRandom
+import java.security.cert.X509Certificate
+import javax.net.ssl.*
+
 
 class CarsInfoParser {
 
-    fun writeAutoInfoToCsv(brands: List<String>, start: Int, end: Int, threadsAmount: Int = 10) {
+    fun writeAutoInfoToCsv(city: String, brands: List<String>, start: Int, end: Int, threadsAmount: Int = 1) {
         val service: ExecutorService = Executors.newFixedThreadPool(threadsAmount)
         IntStream.range(start, end).forEach { i ->
             run {
@@ -28,7 +35,7 @@ class CarsInfoParser {
                     val pathName = "${System.getProperty("user.dir")}/src/main/resources/all_$brand.csv"
                     service.submit {
                         OutputStreamWriter(FileOutputStream(pathName , true), Charset.forName("UTF8")).use {
-                            writeCarsData(it, brand, getCarsData(brand, i))
+                            writeCarsData(it, brand, getCarsData(city, brand, i))
                         }
                     }
                 }
@@ -38,6 +45,18 @@ class CarsInfoParser {
         service.shutdown()
     }
 
+    fun writeAutoInfoToCsv(city: String, brands: List<String>, start: Int, end: Int) {
+        for (i in start..end) {
+            for (brand in brands) {
+                val pathName = "${System.getProperty("user.dir")}/src/main/resources/all_$brand.csv"
+                OutputStreamWriter(FileOutputStream(pathName, true), Charset.forName("UTF8")).use {
+                    writeCarsData(it, brand, getCarsData(city, brand, i))
+                }
+            }
+        }
+    }
+
+
     fun createFiles(brands: List<String>) {
         for (brand in brands) {
             val pathName = "${System.getProperty("user.dir")}/src/main/resources/all_$brand.csv"
@@ -46,15 +65,16 @@ class CarsInfoParser {
                 Files.createFile(path)
                 val outputStream: OutputStream = FileOutputStream(pathName)
                 val writer = OutputStreamWriter(outputStream)
-                writer.write("brand;productionDate;bodyType;color;engineDisplacement;enginePower;fuelType;vehicleTransmission;drive;wheel;own;state;customs;price;mileage;owners;car_url;image_url;numberOfDoors;parsing_unixtime;model;pts;description\n")
+                writer.write("brand;productionDate;bodyType;color;engineDisplacement;enginePower;fuelType;vehicleTransmission;drive;wheel;state;customs;price;mileage;owners;car_url;image_url;numberOfDoors;parsing_unixtime;model;pts;description\n")
                 writer.flush()
                 writer.close()
             }
         }
     }
 
-    fun parseAutoruPage(brand: String, index: Int): List<AutoInfo> {
-        val autoru: Document = Jsoup.connect(AutoRuEndpoints.BASE_URL.url + AutoRuEndpoints.CARS_INFO_ALL.url.format(brand, index)).get()
+    fun parseAutoruPage(city: String, brand: String, index: Int): List<AutoInfo> {
+        val autoru: Document = Jsoup.connect(AutoRuEndpoints.BASE_URL.url + AutoRuEndpoints.CAR_INFO_URL.url.format(city, brand, index)).get()
+        //val autoru: Document = Jsoup.connect(AutoRuEndpoints.BASE_URL.url + AutoRuEndpoints.CARS_INFO_ALL.url.format(brand, index)).get()
         val headlines: Elements = autoru.select(".ListingItem-module__main")
         var autosInfo = arrayListOf<AutoInfo>()
         for (headline in headlines) {
@@ -68,7 +88,6 @@ class CarsInfoParser {
                 model = headline.select("h3").text().trim(),
                 engineDisplacement = engineInfo.substringBefore("/").substringBefore(" л").trim(),
                 enginePower = engineInfo.substringAfter("/").substringBefore("/").substringBefore(" л.c.").trim(),
-                fuelType = engineInfo.substringAfterLast("/").trim(),
                 vehicleTransmission = carInfo[1].text().trim(),
                 bodyType = carInfo[2].text().substringBefore(" ").trim(),
                 numberOfDoors = carInfo[2].text().substringAfter(" ").substringBefore(" ").trim(),
@@ -76,16 +95,16 @@ class CarsInfoParser {
                 color = carInfo[4].text().trim(),
                 price = headline.select(".ListingItemPrice-module__content").text().replace("₽", "").replace(" ", "")
                     .toLongOrNull(),
-                car_url = headline.select("a.Link.ListingItemTitle-module__link").attr("href").trim(),
-                image_url = headline.select("a.Link.OfferThumb").attr("href").trim(),
-                mileage = headline.select(".ListingItem-module__columnCellKmAge").text().replace("км", "")
-                    .replace(" ", "").toLongOrNull(),
+                car_url = headline.select("a.Link.ListingItemTitle__link").attr("href").trim(),
+                image_url = headline.select("a.Link.OfferThumb").attr("href").trim()
             )
             val autoPage: Document = Jsoup.connect(autoInfo.car_url).get()
+            autoInfo.fuelType = autoPage.select(".CardInfoRow.CardInfoRow_engine > .CardInfoRow__cell:last-child >*> a").text().trim()
+            autoInfo.mileage = autoPage.select(".CardInfoRow.CardInfoRow_kmAge > .CardInfoRow__cell:last-child").text().replace("км", "").replace(" ", "").toLongOrNull()
             autoInfo.wheel = autoPage.select(".CardInfoRow.CardInfoRow_wheel").text().substringAfter("Руль").trim()
             autoInfo.state = autoPage.select(".CardInfoRow.CardInfoRow_state").text().substringAfter("Состояние").trim()
             autoInfo.owners =
-                autoPage.select(".CardInfoRow.CardInfoRow_ownersCount").text().substringAfter("Владельцы").trim()
+                autoPage.select(".CardInfoRow.CardInfoRow_ownersCount > .CardInfoRow__cell:last-child").text().substringAfter("Владельцы").trim()
             autoInfo.pts = autoPage.select(".CardInfoRow.CardInfoRow_pts").text().substringAfter("ПТС").trim()
             autoInfo.customs =
                 autoPage.select(".CardInfoRow.CardInfoRow_customs").text().substringAfter("Таможня").trim()
@@ -95,15 +114,15 @@ class CarsInfoParser {
         return autosInfo
     }
 
-    fun getCarsData(brand: String, index: Int): List<AutoInfo> {
-        val autosInfo = parseAutoruPage(brand, index)
+    fun getCarsData(city: String, brand: String, index: Int): List<AutoInfo> {
+        val autosInfo = parseAutoruPage(city, brand, index)
         println("$brand - $index : ${autosInfo.size}")
         return autosInfo
     }
 
     fun writeCarsData(writer: OutputStreamWriter, brand: String, autosInfo: List<AutoInfo>) {
         for (autoInfo in autosInfo) {
-            writer.write("${autoInfo.brand};${autoInfo.productionDate};${autoInfo.bodyType};${autoInfo.color};${autoInfo.engineDisplacement};${autoInfo.enginePower};${autoInfo.fuelType};${autoInfo.vehicleTransmission};${autoInfo.drive};${autoInfo.wheel};${autoInfo.own};${autoInfo.state};${autoInfo.customs};${autoInfo.price};${autoInfo.mileage};${autoInfo.owners};${autoInfo.car_url};${autoInfo.image_url};${autoInfo.numberOfDoors};${autoInfo.parsing_unixtime};${autoInfo.model};${autoInfo.pts};${autoInfo.description}\n")
+            writer.write("${autoInfo.brand};${autoInfo.productionDate};${autoInfo.bodyType};${autoInfo.color};${autoInfo.engineDisplacement};${autoInfo.enginePower};${autoInfo.fuelType};${autoInfo.vehicleTransmission};${autoInfo.drive};${autoInfo.wheel};${autoInfo.state};${autoInfo.customs};${autoInfo.price};${autoInfo.mileage};${autoInfo.owners};${autoInfo.car_url};${autoInfo.image_url};${autoInfo.numberOfDoors};${autoInfo.parsing_unixtime};${autoInfo.model};${autoInfo.pts};${autoInfo.description}\n")
         }
     }
 }
