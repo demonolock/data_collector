@@ -20,14 +20,20 @@ import java.util.stream.IntStream
 
 class CarsInfoParser {
 
-    fun writeAutoInfoToCsv(city: String, brands: List<String>, start: Int, end: Int, threadsAmount: Int = 1): CarsInfoParser {
+    fun writeAutoInfoToCsv(
+        city: String,
+        brands: List<String>,
+        start: Int,
+        end: Int,
+        threadsAmount: Int = 1
+    ): CarsInfoParser {
         val service: ExecutorService = Executors.newFixedThreadPool(threadsAmount)
         IntStream.range(start, end).forEach { i ->
             run {
                 for (brand in brands) {
-                    val pathName = "${System.getProperty("user.dir")}/src/main/resources/all_$brand.csv"
+                    val pathName = "./target/all_$brand.csv"
                     service.submit {
-                        OutputStreamWriter(FileOutputStream(pathName , true), Charset.forName("UTF8")).use {
+                        OutputStreamWriter(FileOutputStream(pathName, true), Charset.forName("UTF8")).use {
                             writeCarsData(it, brand, getCarsData(city, brand, i))
                         }
                     }
@@ -42,7 +48,7 @@ class CarsInfoParser {
     fun writeAutoInfoToCsv(city: String, brands: List<String>, start: Int, end: Int) {
         for (i in start..end) {
             for (brand in brands) {
-                val pathName = "${System.getProperty("user.dir")}/src/main/resources/all_$brand.csv"
+                val pathName = "./target/all_$brand.csv"
                 OutputStreamWriter(FileOutputStream(pathName, true), Charset.forName("UTF8")).use {
                     writeCarsData(it, brand, getCarsData(city, brand, i))
                 }
@@ -53,8 +59,8 @@ class CarsInfoParser {
 
     fun createFiles(brands: List<String>): CarsInfoParser {
         for (brand in brands) {
-            val pathName = "${System.getProperty("user.dir")}/src/main/resources/all_$brand.csv"
-            val path = Paths.get(File("${System.getProperty("user.dir")}/src/main/resources/all_$brand.csv").toString())
+            val pathName = "./target/all_$brand.csv"
+            val path = Paths.get(File("./target/all_$brand.csv").toString())
             if (!Files.exists(path)) {
                 Files.createFile(path)
                 val outputStream: OutputStream = FileOutputStream(pathName)
@@ -68,7 +74,9 @@ class CarsInfoParser {
     }
 
     fun parseAutoruPage(city: String, brand: String, index: Int): List<AutoInfo> {
-        val autoru: Document = Jsoup.connect(AutoRuEndpoints.BASE_URL.url + AutoRuEndpoints.CAR_INFO_URL.url.format(city, brand, index)).get()
+        val autoru: Document =
+            Jsoup.connect(AutoRuEndpoints.BASE_URL.url + AutoRuEndpoints.CAR_INFO_URL.url.format(city, brand, index))
+                .get()
         //val autoru: Document = Jsoup.connect(AutoRuEndpoints.BASE_URL.url + AutoRuEndpoints.CARS_INFO_ALL.url.format(brand, index)).get()
         val headlines: Elements = autoru.select(".ListingItem-module__main")
         var autosInfo = arrayListOf<AutoInfo>()
@@ -94,12 +102,15 @@ class CarsInfoParser {
                 image_url = headline.select("a.Link.OfferThumb").attr("href").trim()
             )
             val autoPage: Document = Jsoup.connect(autoInfo.car_url).get()
-            autoInfo.fuelType = autoPage.select(".CardInfoRow.CardInfoRow_engine > .CardInfoRow__cell:last-child >*> a").text().trim()
-            autoInfo.mileage = autoPage.select(".CardInfoRow.CardInfoRow_kmAge > .CardInfoRow__cell:last-child").text().replace("км", "").replace(" ", "").toLongOrNull()
+            autoInfo.fuelType =
+                autoPage.select(".CardInfoRow.CardInfoRow_engine > .CardInfoRow__cell:last-child >*> a").text().trim()
+            autoInfo.mileage = autoPage.select(".CardInfoRow.CardInfoRow_kmAge > .CardInfoRow__cell:last-child").text()
+                .replace("км", "").replace(" ", "").toLongOrNull()
             autoInfo.wheel = autoPage.select(".CardInfoRow.CardInfoRow_wheel").text().substringAfter("Руль").trim()
             autoInfo.state = autoPage.select(".CardInfoRow.CardInfoRow_state").text().substringAfter("Состояние").trim()
             autoInfo.owners =
-                autoPage.select(".CardInfoRow.CardInfoRow_ownersCount > .CardInfoRow__cell:last-child").text().substringAfter("Владельцы").trim()
+                autoPage.select(".CardInfoRow.CardInfoRow_ownersCount > .CardInfoRow__cell:last-child").text()
+                    .substringAfter("Владельцы").trim()
             autoInfo.pts = autoPage.select(".CardInfoRow.CardInfoRow_pts").text().substringAfter("ПТС").trim()
             autoInfo.customs =
                 autoPage.select(".CardInfoRow.CardInfoRow_customs").text().substringAfter("Таможня").trim()
@@ -120,29 +131,4 @@ class CarsInfoParser {
             writer.write("${autoInfo.brand};${autoInfo.productionDate};${autoInfo.bodyType};${autoInfo.color};${autoInfo.engineDisplacement};${autoInfo.enginePower};${autoInfo.fuelType};${autoInfo.vehicleTransmission};${autoInfo.drive};${autoInfo.wheel};${autoInfo.state};${autoInfo.customs};${autoInfo.price};${autoInfo.mileage};${autoInfo.owners};${autoInfo.car_url};${autoInfo.image_url};${autoInfo.numberOfDoors};${autoInfo.parsing_unixtime};${autoInfo.model};${autoInfo.pts};${autoInfo.description}\n")
         }
     }
-
-    companion object {
-        val brands = listOf(
-            "lexus",
-            "bmw",
-            "audi",
-            "honda",
-            "infiniti",
-            "mercedes",
-            "mitsubishi",
-            "nissan",
-            "skoda",
-            "toyota",
-            "volkswagen",
-            "volvo"
-        )
-        @JvmStatic
-        fun main(args: Array<String>) {
-            CarsInfoParser()
-                .createFiles(brands)
-                .writeAutoInfoToCsv(city = "moskva", brands = brands, start = 1, end = 30, threadsAmount = 1)
-                .writeAutoInfoToCsv(city = "sankt-peterburg", brands = brands, start = 1, end = 30, threadsAmount = 1)
-        }
-    }
 }
-

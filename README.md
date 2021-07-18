@@ -28,4 +28,19 @@ fun main(args: Array<String>) {
 `end` - индекс страницы на которой парсинг будет остановлен
 
 `threadsAmount` - количество потоков для обработки (по умолчанию 10)
+---
+### Для загрузки в Artifact Registry
 
+```$xslt
+# Логинимся в gcloud
+>gcloud auth configure-docker LOCATION-docker.pkg.dev
+
+# Помечаем и пушим image
+>docker tag SOURCE-IMAGE LOCATION-docker.pkg.dev/PROJECT-ID/REPOSITORY/IMAGE:TAG
+>docker push LOCATION-docker.pkg.dev/PROJECT-ID/REPOSITORY/IMAGE
+
+# Для примера 
+>gcloud auth configure-docker europe-west6-docker.pkg.dev
+>docker tag app europe-west6-docker.pkg.dev/sound-fastness-194720/autoru/app:latest
+>docker push europe-west6-docker.pkg.dev/sound-fastness-194720/autoru/app:latest
+```
