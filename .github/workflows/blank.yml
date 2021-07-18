@@ -29,4 +29,3 @@ jobs:
       - name: Run data collection
         run: |
           mvn clean compile package
-          java -jar target/consoleApp-1.0-SNAPSHOT-jar-with-dependencies.jar
